@@ -17,16 +17,16 @@ export const Logo = () => {
         <div className="bg-white rounded-full p-1 mr-12 shrink-0 lg:mr-0 lg:shrink">
           <Image src="/spooky.svg" alt="TwitchClub" height="32" width="32" />
         </div>
-      </div>
-      <div
-        className={cn(
-          "hidden lg:block",
+        <div
+          className={cn(
+            "hidden lg:block",
 
-          font.className
-        )}
-      >
-        <p className="text-lg font-semibold">TwitchClub</p>
-        <p className="text-xs text-muted-foreground">Let&apos;s play</p>
+            font.className
+          )}
+        >
+          <p className="text-lg font-semibold">TwitchClub</p>
+          <p className="text-xs text-muted-foreground">Let&apos;s play</p>
+        </div>
       </div>
     </Link>
   );
