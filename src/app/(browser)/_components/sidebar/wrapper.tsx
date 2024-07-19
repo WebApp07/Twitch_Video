@@ -10,7 +10,7 @@ interface WrapperProps {
 }
 
 export const Wrapper = ({ children }: WrapperProps) => {
-  const [isClient, setIsClient] = useState();
+  const [isClient, setIsClient] = useState(false);
   const { collapsed } = useSidebar((state) => state);
 
   useEffect(() => {
