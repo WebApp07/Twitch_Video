@@ -3,6 +3,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "fullTextIndex"]
 }
 
 datasource db {
@@ -11,49 +12,53 @@ datasource db {
 }
 
 
+
+
 model User {
 id String @id @default(auto()) @map("_id") @db.ObjectId
   username String @unique
-  imageUrl String 
+  imageUrl String
   externalUserId String @unique
   bio String?
-
+  
   following Follow[] @relation("Following")
   followedBy Follow[] @relation("FollowedBy")
 
   blocking Block[] @relation("Blocking")
   blockedBy Block[] @relation("BlockedBy")
-
-  stream Stream[]
+  stream Stream?
 
   createdAt DateTime @default(now())
-  updateAt DateTime @updatedAt
-
+  updatedAt DateTime @updatedAt
 }
+
 
 model Stream {
-  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
-  name                String
-  thumbnailUrl        String?
-  ingressId           String?
-  serverUrl           String?
-  streamKey           String?
-  isLive              Boolean  @default(false)
-  isChatEnabled       Boolean  @default(true)
-  isChatDelayed       Boolean  @default(false)
-  isChatFollowersOnly Boolean  @default(false)
-  userId              String @db.ObjectId 
-  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+id String @id @default(auto()) @map("_id") @db.ObjectId
+  name String
+  thumbnailUrl String?
+
+  ingressId String?
+  serverUrl String?
+  streamKey String?
+
+  // stream options later will be connected with webhooks
+  isLive Boolean @default(false)
+  isChatEnabled Boolean @default(true)
+  isChatDelayed Boolean @default(false)
+  isChatFollowersOnly Boolean @default(false)
+
+  // relation to user who created the stream
+  userId String @db.ObjectId @unique
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([ingressId])
+  // stream will be searchable by name
+  @@fulltext([name])
 }
-
-
-
-
-
 
 model Follow {
   id String @id @default(auto()) @map("_id") @db.ObjectId
