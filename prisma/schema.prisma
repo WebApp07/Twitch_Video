@@ -26,6 +26,7 @@ id String @id @default(auto()) @map("_id") @db.ObjectId
 
   blocking Block[] @relation("Blocking")
   blockedBy Block[] @relation("BlockedBy")
+
   stream Stream?
 
   createdAt DateTime @default(now())
@@ -38,7 +39,7 @@ id String @id @default(auto()) @map("_id") @db.ObjectId
   name String
   thumbnailUrl String?
 
-  ingressId String?
+  ingressId String? @unique
   serverUrl String?
   streamKey String?
 
@@ -55,7 +56,6 @@ id String @id @default(auto()) @map("_id") @db.ObjectId
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([ingressId])
   // stream will be searchable by name
   @@fulltext([name])
 }

@@ -1,5 +1,4 @@
 "use client";
-import { IngressInput } from "livekit-server-sdk";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,11 +16,11 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-  selectValue,
 } from "@/components/ui/select";
 import { useState, useTransition, useRef, ElementRef } from "react";
 import { createIngress } from "../../../../../../../actions/ingress";
 import { toast } from "sonner";
+import { IngressInput } from "livekit-server-sdk";
 
 const RTMP = String(IngressInput.RTMP_INPUT);
 const WHIP = String(IngressInput.WHIP_INPUT);
@@ -31,11 +30,11 @@ type IngressInput = typeof RTMP | typeof WHIP;
 export const ConnectModal = () => {
   const closeRef = useRef<ElementRef<"button">>(null);
   const [isPending, startTransition] = useTransition();
-  const [IngressType, setIngressType] = useState<IngressInput>(RTMP);
+  const [ingressType, setIngressType] = useState<IngressInput>(RTMP);
 
   const onSubmit = () => {
     startTransition(() => {
-      createIngress(parseInt(IngressType))
+      createIngress(parseInt(ingressType))
         .then(() => {
           toast.success("Connection generated");
           closeRef?.current?.click();
@@ -55,7 +54,7 @@ export const ConnectModal = () => {
         </DialogHeader>
         <Select
           disabled={isPending}
-          value={IngressType}
+          value={ingressType}
           onValueChange={(value) => setIngressType(value)}
         >
           <SelectTrigger className="w-full">

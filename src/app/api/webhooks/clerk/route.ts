@@ -1,16 +1,20 @@
 import { Webhook } from "svix";
 import { headers } from "next/headers";
-import { currentUser, WebhookEvent } from "@clerk/nextjs/server";
+import { WebhookEvent } from "@clerk/nextjs/server";
+import { resetIngresses } from "@/actions/ingress";
+
 import { db } from "@/lib/db";
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
 
   if (!WEBHOOK_SECRET) {
-    throw new Error("Please add CLERK_WEBHOOK_SECRET environment variable");
+    throw new Error(
+      "CLERK_WEBHOOK_SECRET is not set, please set it in your environment variables"
+    );
   }
 
-  // Get the headers
+  // Get headers
   const headerPayload = headers();
   const svix_id = headerPayload.get("svix-id");
   const svix_timestamp = headerPayload.get("svix-timestamp");
@@ -22,12 +26,11 @@ export async function POST(request: Request) {
       status: 400,
     });
   }
-
   // Get the body
-  const payload = await request.json();
+  const payload = await req.json();
   const body = JSON.stringify(payload);
 
-  // Create a new Svix instance with your secret.
+  // Create a new Svix instance with your webhook secret
   const wh = new Webhook(WEBHOOK_SECRET);
 
   let evt: WebhookEvent;
@@ -45,8 +48,7 @@ export async function POST(request: Request) {
       status: 400,
     });
   }
-  // Do something with the payload
-  // For this guide, you simply log the payload to the console
+
   const eventType = evt.type;
 
   if (eventType === "user.created") {
@@ -57,7 +59,7 @@ export async function POST(request: Request) {
         imageUrl: payload.data.image_url,
         stream: {
           create: {
-            name: `${payload.data.username}'s stream `,
+            name: `${payload.data.username}'s stream`,
           },
         },
       },
@@ -66,26 +68,31 @@ export async function POST(request: Request) {
 
   if (eventType === "user.updated") {
     const currentUser = await db.user.findUnique({
-      where: { externalUserId: payload.data.id },
+      where: {
+        externalUserId: payload.data.id,
+      },
+    });
+
+    if (!currentUser) {
+      return new Response("User not found", {
+        status: 404,
+      });
+    }
+
+    await db.user.update({
+      where: {
+        externalUserId: payload.data.id,
+      },
+      data: {
+        username: payload.data.username,
+        imageUrl: payload.data.image_url,
+      },
     });
   }
 
-  if (!currentUser) {
-    console.error("User not found:", payload.data.id);
-    return new Response("User not found", { status: 404 });
-  }
-
-  await db.user.update({
-    where: {
-      externalUserId: payload.data.id,
-    },
-    data: {
-      username: payload.data.username,
-      imageUrl: payload.data.image_url,
-    },
-  });
-
   if (eventType === "user.deleted") {
+    await resetIngresses(payload.data.id);
+
     await db.user.delete({
       where: {
         externalUserId: payload.data.id,
