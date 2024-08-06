@@ -12,37 +12,13 @@ export const getRecommended = async () => {
   }
 
   let users = [];
-
   if (userId) {
     users = await db.user.findMany({
       where: {
-        AND: [
-          {
-            NOT: {
-              id: userId,
-            },
-          },
-          {
-            NOT: {
-              followedBy: {
-                some: {
-                  followerId: userId,
-                },
-              },
-            },
-          },
-          {
-            NOT: {
-              blocking: {
-                some: {
-                  blockedId: userId,
-                },
-              },
-            },
-          },
-        ],
+        NOT: {
+          id: userId,
+        },
       },
-
       include: {
         stream: {
           select: {
@@ -50,11 +26,37 @@ export const getRecommended = async () => {
           },
         },
       },
+      orderBy: [
+        {
+          createdAt: "desc",
+        },
+      ],
+    });
 
-      orderBy: {
-        createdAt: "desc",
+    const following = await db.follow.findMany({
+      where: {
+        followerId: userId,
+      },
+      select: {
+        followingId: true,
       },
     });
+
+    const blocked = await db.block.findMany({
+      where: {
+        blockerId: userId,
+      },
+      select: {
+        blockedId: true,
+      },
+    });
+
+    const followingIds = following.map((f) => f.followingId);
+    const blockedIds = blocked.map((b) => b.blockedId);
+
+    users = users.filter(
+      (u) => !followingIds.includes(u.id) && !blockedIds.includes(u.id)
+    );
   } else {
     users = await db.user.findMany({
       include: {
@@ -69,45 +71,6 @@ export const getRecommended = async () => {
       },
     });
   }
+
   return users;
-};
-
-export const followUser = async (id: string) => {
-  const self = await getSelf();
-
-  const otherUser = await db.user.findUnique({
-    where: { id },
-  });
-
-  if (!otherUser) {
-    throw new Error("User not found 🤭");
-  }
-
-  if (otherUser.id === self.id) {
-    throw new Error("Cannot follow yourself 🤫");
-  }
-
-  const existingFollow = await db.follow.findFirst({
-    where: {
-      followerId: self.id,
-      followingId: otherUser.id,
-    },
-  });
-
-  if (existingFollow) {
-    throw new Error("Already following this user 🙄");
-  }
-
-  const follow = await db.follow.create({
-    data: {
-      followerId: self.id,
-      followingId: otherUser.id,
-    },
-    include: {
-      follower: true,
-      following: true,
-    },
-  });
-
-  return follow;
 };
